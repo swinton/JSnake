@@ -1,6 +1,7 @@
 package com.stevewinton.games.snake3;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
 
 import com.stevewinton.games.snake3.exception.*;
 import com.stevewinton.games.snake3.event.*;
@@ -8,7 +9,6 @@ import com.stevewinton.games.snake3.event.*;
 public class Snake {
   ArrayList<SnakeMovedEventListener> eventListeners = new ArrayList<SnakeMovedEventListener>();
   ArrayList<SnakeBlock> blocks;
-  //Food f; // need awareness of food position, to raise FoodEatenEvents
   int xBoundary;
   int yBoundary;
 
@@ -37,18 +37,17 @@ public class Snake {
   }
 
   // This method will be the source of the FoodEatenEvent
-  synchronized void move() throws SnakeOutOfBoundsException, SnakeIllegalMoveException {
+  void move() throws SnakeOutOfBoundsException, SnakeIllegalMoveException {
 
     // Keep moving in head direction
-
     SnakeBlock head = getHead();
-    SnakeDirection headDirection = head.getDirection();
+    SnakeDirection direction = head.getDirection();
 
     // Calculate newX and newY
     int newY = head.getY();
     int newX = head.getX();
 
-    switch (headDirection) {
+    switch (direction) {
       case UP : 
         newY--;
         break;
@@ -70,17 +69,7 @@ public class Snake {
     if (intersects(newX, newY))
       throw new SnakeIllegalMoveException();
     
-    /*
-    // Move is valid, test to see if the food has been eaten
-    if (newX == f.getX() && newY == f.getY()) {
-      // Food has been eaten, notify all FoodEatenEventListeners!
-      FoodEatenEvent e = new FoodEatenEvent(f);
-      for (FoodEatenEventListener listener : eventListeners)
-        listener.foodEaten(e);
-    }
-    */
-
-    // Now, set new co-ordinates on each block
+    // Now, set new co-ordinates/direction on each block
     int previousX;
     int previousY;
 
@@ -90,14 +79,22 @@ public class Snake {
       previousY = b.getY();
       b.setX(newX);
       b.setY(newY); 
+      b.setDirection(direction);
       newX = previousX;
       newY = previousY;
+      direction = b.getDirection();
     }
 
     // Finally, notify listeners of SnakeMovedEvent
     SnakeMovedEvent e = new SnakeMovedEvent(this);
     for (SnakeMovedEventListener listener : eventListeners)
       listener.snakeMoved(e);
+
+    // Slow the snake down!
+    try {
+      Thread.sleep(75);
+    }
+    catch (Exception ex) {}
   }
 
   void grow() {
@@ -111,7 +108,7 @@ public class Snake {
     }
   }
 
-  void turn(SnakeDirection direction) {
+  synchronized void turn(SnakeDirection direction) {
     // Validate and set new direction
     if (validDirection(direction)) 
       getHead().setDirection(direction);

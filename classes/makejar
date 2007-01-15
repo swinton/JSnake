@@ -1,0 +1,1 @@
+/cygdrive/d/java_6.0/bin/jar -cvmf manifest.txt snake.jar com

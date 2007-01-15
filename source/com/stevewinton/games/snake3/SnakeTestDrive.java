@@ -1,5 +1,7 @@
 package com.stevewinton.games.snake3;
 
+import java.util.ArrayList;
+
 import com.stevewinton.games.snake3.event.*;
 import com.stevewinton.games.snake3.exception.*;
 
@@ -21,6 +23,16 @@ public class SnakeTestDrive implements FoodEatenEventListener {
     System.out.println("Food eaten!");
     f.setX(0);
     f.setY(5);
+  }
+
+  void testCoordSystem() {
+    int[][] coords = {{19,19},{19,18},{19,17},{19,16},{19,15}};
+    ArrayList<SnakeBlock> blocks = s.getSnakeBlocks();
+    for (int i = 0; i < coords.length; i++) {
+      SnakeBlock b = blocks.get(i);
+      b.setX(coords[i][0]);
+      b.setY(coords[i][1]);
+    }
   }
 
   void go() {
