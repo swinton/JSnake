@@ -3,14 +3,17 @@ package com.stevewinton.games.snake3;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
-import com.stevewinton.games.snake3.exception.*;
+//import com.stevewinton.games.snake3.exception.*;
 import com.stevewinton.games.snake3.event.*;
 
-public class Snake {
+public class Snake implements Runnable {
   ArrayList<SnakeMovedEventListener> eventListeners = new ArrayList<SnakeMovedEventListener>();
   ArrayList<SnakeBlock> blocks;
   int xBoundary;
   int yBoundary;
+  boolean visible;
+  boolean isOutOfBounds;
+  boolean hasCollided;
 
   Snake(SnakeDirection initialDirection, int initialLength, int initialXPos, int initialYPos, int xBoundary, int yBoundary) {
     blocks = new ArrayList<SnakeBlock>(initialLength);
@@ -36,9 +39,19 @@ public class Snake {
     return sb.toString();
   }
 
-  // This method will be the source of the FoodEatenEvent
-  void move() throws SnakeOutOfBoundsException, SnakeIllegalMoveException {
+  public void run() {
+    while (!isOutOfBounds && !hasCollided) {
+      move();
+      // Slow the snake down!
+      try {
+        Thread.sleep(75);
+      }
+      catch (Exception ex) {}
+    }
+  }
 
+  // This method will be the source of the FoodEatenEvent
+  void move() {
     // Keep moving in head direction
     SnakeBlock head = getHead();
     SnakeDirection direction = head.getDirection();
@@ -62,39 +75,41 @@ public class Snake {
         break;
     }
     
-    // Validate move
-    if (newX > xBoundary || newX < 0 || newY > yBoundary || newY < 0)
-      throw new SnakeOutOfBoundsException();
-
-    if (intersects(newX, newY))
-      throw new SnakeIllegalMoveException();
-    
-    // Now, set new co-ordinates/direction on each block
-    int previousX;
-    int previousY;
-
-    for (SnakeBlock b : blocks) {
-      // Each block gets the position of the next block up in the ArrayList
-      previousX = b.getX();
-      previousY = b.getY();
-      b.setX(newX);
-      b.setY(newY); 
-      b.setDirection(direction);
-      newX = previousX;
-      newY = previousY;
-      direction = b.getDirection();
-    }
-
-    // Finally, notify listeners of SnakeMovedEvent
     SnakeMovedEvent e = new SnakeMovedEvent(this);
+
+    // Validate move
+    if (newX > xBoundary || newX < 0 || newY > yBoundary || newY < 0) {
+      // Out of bounds
+      isOutOfBounds = true;
+      e.setOutOfBounds(true);
+    }
+    else if (intersects(newX, newY)) {
+      // Self collision
+      hasCollided = true;
+      e.setSelfCollision(true);
+    }
+    else {
+      // Move was valid
+      e.setValidMove(true);
+      // Now, set new co-ordinates/direction on each block
+      int previousX;
+      int previousY;
+
+      for (SnakeBlock b : blocks) {
+        // Each block gets the position of the next block up in the ArrayList
+        previousX = b.getX();
+        previousY = b.getY();
+        b.setX(newX);
+        b.setY(newY); 
+        b.setDirection(direction);
+        newX = previousX;
+        newY = previousY;
+        direction = b.getDirection();
+      }
+    }
+    // Finally, notify listeners of SnakeMovedEvent
     for (SnakeMovedEventListener listener : eventListeners)
       listener.snakeMoved(e);
-
-    // Slow the snake down!
-    try {
-      Thread.sleep(75);
-    }
-    catch (Exception ex) {}
   }
 
   void grow() {
@@ -168,5 +183,13 @@ public class Snake {
       (direction == SnakeDirection.LEFT || direction == SnakeDirection.RIGHT)) || 
      ((headDirection == SnakeDirection.LEFT || headDirection == SnakeDirection.RIGHT) &&
       (direction == SnakeDirection.UP || direction == SnakeDirection.DOWN)));
+  }
+
+  boolean isVisible() {
+    return visible;
+  }
+
+  void setVisible(boolean b) {
+    visible = b;
   }
 }

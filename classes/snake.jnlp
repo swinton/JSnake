@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<jnlp spec="0.2 1.0"
+
+      codebase="http://127.0.0.1/~swinton/java"
+
+      href="snake.jnlp">
+
+  <information>
+
+    <title>Snake</title>
+
+    <vendor>Steve Winton</vendor>
+
+    <homepage href="index.html" />
+
+    <description>Snake Game by Steve Winton</description>
+
+    <icon href="" />
+
+  </information>
+
+  <resources>
+
+    <j2se version="1.5+" />
+
+    <jar href="snake.jar" />
+
+  </resources>
+
+  <application-desc main-class="SnakeGame" />
+
+</jnlp>

@@ -6,13 +6,14 @@ import java.awt.event.*;
 import java.util.ArrayList;
 
 import com.stevewinton.games.snake3.event.*;
-import com.stevewinton.games.snake3.exception.*;
+//import com.stevewinton.games.snake3.exception.*;
 
 public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListener {
   int xBoundary = 19;
   int yBoundary = 19;
-  int gameWidth = 480;
-  int gameHeight = 480;
+  int gameWidth = 440;
+  int gameHeight = 470;
+
   Color snakeColor = Color.yellow;
   Color foodColor = Color.green;
   Color backgroundColor = Color.gray;
@@ -23,9 +24,11 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   SnakeGameController controller;
   Snake s;
   Food f;
+
   int score;
   int scoreIncrement = 10;
-  boolean playing;
+  boolean doReset; // Flag to indicate whether we need to do a reset before starting
+  boolean playing; // Flag to indicate whether game is being played
   boolean resized = true; // Flag to indicate whether playing area has been resized
 
   private void repaint() {
@@ -41,8 +44,19 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   }
 
   public synchronized void snakeMoved(SnakeMovedEvent e) {
-    System.out.println("Snake moved!");
-    repaint();
+    if (e.isValidMove()) {
+      repaint();
+    }
+    else if (e.isOutOfBounds()) {
+      System.out.println("Snake out of bounds!");
+      System.out.println(s);
+      gameOver();
+    }
+    else if (e.isSelfCollision()) {
+      System.out.println("Snake has eaten itself!");
+      System.out.println(s);
+      gameOver();
+    }
   }
 
   private void test() {
@@ -56,11 +70,9 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
       borderPanel.remove(panel);
     }
     panel = new SnakePanel();
-    panel.setPreferredSize(new Dimension(gameWidth,gameHeight));
+    panel.setPreferredSize(new Dimension(gameWidth - 30, gameHeight - 30));
     panel.addMouseListener(controller);
-    panel.addComponentListener(controller);
     borderPanel.add(BorderLayout.CENTER, panel);
-    panel.setVisible(true);
     borderPanel.revalidate();
   }
 
@@ -78,6 +90,7 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     frame = new JFrame("Snake");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.addKeyListener(controller);
+    //frame.addComponentListener(controller);
     frame.add(BorderLayout.CENTER, borderPanel);
     frame.setSize(gameWidth, gameHeight);
     frame.setLocation(100, 100);
@@ -87,52 +100,43 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   private void gameOver() {
     playing = false;
     System.out.println("Game over! Score: " + score);
-    //reset();
-  }
-
-  private void moveSnake() {
-    try {
-      s.move();
-    }
-    catch (SnakeOutOfBoundsException e) {
-      System.out.println("Snake out of bounds!");
-      System.out.println(s);
-      gameOver();
-    }
-    catch (SnakeIllegalMoveException e) {
-      System.out.println("Snake has eaten itself!");
-      System.out.println(s);
-      gameOver();
-    }
+    //doReset = true;
+    reset();
   }
 
   private void go() {
-    if (SwingUtilities.isEventDispatchThread()) {
-      System.out.println("IS EDT!");
-    }
-    else {
-      System.out.println("IS *NOT* EDT!");
-    }
+    s.setVisible(true);
+    f.setVisible(true);
+    /*
+    if (doReset)
+      reset();
+    */
     if (!playing) {
       playing = true;
-      while (playing) {
-        moveSnake();
-      }
+      Thread t = new Thread(s);
+      t.start();
     }
   }
 
   private void setupGameObjects() {
+    score = 0;
     controller = new SnakeGameController();
+    // Create snake
     s = new Snake(SnakeDirection.RIGHT, 5, 0, 0, xBoundary, yBoundary);
+    s.setVisible(false);
+    // Create food
     f = new Food(s, xBoundary, yBoundary);
+    f.setVisible(false);
+    // Listen for the FoodEaten event
     f.addFoodEatenEventListener(this);
+    // Listen for the SnakeMoved event
     s.addSnakeMovedEventListener(this);
+    // The Food also listens for the SnakeMoved event
     s.addSnakeMovedEventListener(f);
   }
 
   private void reset() {
     setupGameObjects();
-    //createAndAddSnakePanel();
     javax.swing.SwingUtilities.invokeLater(new Runnable() {
       public void run() {
         createAndAddSnakePanel();
@@ -142,14 +146,11 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
 
   private void init() {
     setupGameObjects();
-    //createAndShowGUI();
     javax.swing.SwingUtilities.invokeLater(new Runnable() {
       public void run() {
         createAndShowGUI();
       }
     });
-    //test();
-    go();
   }
 
   public static void main (String[] args) {
@@ -190,54 +191,52 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
 
     public void keyTyped(KeyEvent e) {
       // Hit spacebar to get things moving!
-      if (e.getKeyChar() == ' ') {
+      if (e.getKeyChar() == ' ' && !playing) {
         go();
       }
     }
     
     public void mouseClicked(MouseEvent e) {
-      /*
-      if (e.getClickCount() > 1) {
+      if (!playing) {
         // Start the game
         go();
       }
       else {
-      */
-      // Steer the snake!
-      if (e.getButton() == 1) {
-        // Left mouse button
-        switch (s.getHead().getDirection()) {
-          case UP :
-            s.turn(SnakeDirection.LEFT);
-            break;
-          case DOWN :
-            s.turn(SnakeDirection.RIGHT);
-            break;
-          case LEFT :
-            s.turn(SnakeDirection.DOWN);
-            break;
-          case RIGHT :
-            s.turn(SnakeDirection.UP);
-            break;
+        // Steer the snake!
+        if (e.getButton() == 1) {
+          // Left mouse button = always turn snake clockwise
+          switch (s.getHead().getDirection()) {
+            case UP :
+              s.turn(SnakeDirection.LEFT);
+              break;
+            case DOWN :
+              s.turn(SnakeDirection.RIGHT);
+              break;
+            case LEFT :
+              s.turn(SnakeDirection.DOWN);
+              break;
+            case RIGHT :
+              s.turn(SnakeDirection.UP);
+              break;
+          }
         }
-      }
-      else {
-        // Secondary mouse button
-        switch (s.getHead().getDirection()) {
-          case UP :
-            s.turn(SnakeDirection.RIGHT);
-            break;
-          case DOWN :
-            s.turn(SnakeDirection.LEFT);
-            break;
-          case LEFT :
-            s.turn(SnakeDirection.UP);
-            break;
-          case RIGHT :
-            s.turn(SnakeDirection.DOWN);
-            break;
+        else {
+          // Secondary mouse button = always turn snake anti-clockwise
+          switch (s.getHead().getDirection()) {
+            case UP :
+              s.turn(SnakeDirection.RIGHT);
+              break;
+            case DOWN :
+              s.turn(SnakeDirection.LEFT);
+              break;
+            case LEFT :
+              s.turn(SnakeDirection.UP);
+              break;
+            case RIGHT :
+              s.turn(SnakeDirection.DOWN);
+              break;
+          }
         }
-      //}
       }
     }
 
@@ -259,6 +258,7 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
 
     public synchronized void componentResized(ComponentEvent e) {
       //resized = true;
+      //System.out.println(frame.getWidth() + ", " + frame.getHeight());
     }
 
     public void componentHidden(ComponentEvent e) {
@@ -282,28 +282,30 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
 
     int blockWidth;
     int blockHeight;
+    int xMargin;
+    int yMargin;
 
     private void paintBlock(Graphics g, int x, int y) {
-      g.fillRect(x * blockWidth + 1, y * blockHeight + 1, blockWidth - 1, blockHeight - 1);
+      g.fillRect(xMargin + (x * blockWidth + 1), yMargin + (y * blockHeight + 1), blockWidth - 1, blockHeight - 1);
     }
 
     private void paintBackground(Graphics g) {
       g.setColor(backgroundColor);
       // Get width, height
-      int w = blockWidth * (xBoundary + 1); 
-      int h = blockHeight * (yBoundary + 1); 
-      g.fillRect(0, 0, w, h);
+      int w = (blockWidth * (xBoundary + 1)); 
+      int h = (blockHeight * (yBoundary + 1)); 
+      g.fillRect(xMargin, yMargin, w, h);
       // draw vertical gridlines
       g.setColor(Color.black);
       int x = 0;
       while (x <= w) {
-        g.drawLine(x, 0, x, h);
+        g.drawLine(x + xMargin, yMargin, x + xMargin, h + yMargin);
         x += blockWidth;
       }
       // draw horizontal gridlines
       int y = 0;
       while (y <= h) {
-        g.drawLine(0, y, w, y);
+        g.drawLine(xMargin, y + yMargin, w + xMargin, y + yMargin);
         y += blockHeight;
       }
     }
@@ -321,7 +323,7 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
       paintBlock(g, f.getX(), f.getY());
     }
 
-    private void debug(Graphics g) {
+    private void debug() {
       System.out.println("width: "+getWidth());
       System.out.println("height: "+getHeight());
       System.out.println("xBoundary: "+xBoundary);
@@ -331,12 +333,17 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     }
 
     public void calcBlockSize() {
+      int w = getWidth();
+      int h = getHeight();
       // Use same size for blockWidth and blockHeight
       // 'boundary + 1' as our co-ordinate system starts from 0
       blockHeight = blockWidth = 
-        Math.min(getWidth() / (xBoundary + 1), getHeight() / (yBoundary + 1));
+        Math.min(w / (xBoundary + 1), h / (yBoundary + 1));
       // Reset 'resized' flag
-      resized = false;
+      //resized = false;
+      // Calculate x and y margins
+      xMargin = (w - (blockWidth * (xBoundary + 1))) / 2;
+      yMargin = (h - (blockHeight * (yBoundary + 1))) / 2;
     }
 
     public void paintComponent(Graphics g) {
@@ -351,9 +358,9 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
         paintFood(g);
 
       // Paint snake
-      paintSnake(g);
+      if (s.isVisible())
+        paintSnake(g);
     }
   }
-
 }
 

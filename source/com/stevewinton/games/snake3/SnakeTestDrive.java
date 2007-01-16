@@ -3,7 +3,7 @@ package com.stevewinton.games.snake3;
 import java.util.ArrayList;
 
 import com.stevewinton.games.snake3.event.*;
-import com.stevewinton.games.snake3.exception.*;
+//import com.stevewinton.games.snake3.exception.*;
 
 public class SnakeTestDrive implements FoodEatenEventListener {
   Snake s;
@@ -35,6 +35,7 @@ public class SnakeTestDrive implements FoodEatenEventListener {
     }
   }
 
+  /*
   void go() {
     f.addFoodEatenEventListener(this);
     // Explicitly position food, so it gets eaten
@@ -82,9 +83,10 @@ public class SnakeTestDrive implements FoodEatenEventListener {
       }
     }
   }
+  */
 
   public static void main (String[] args) {
     SnakeTestDrive testDrive = new SnakeTestDrive();
-    testDrive.go();
+    //testDrive.go();
   }
 }
