@@ -23,6 +23,7 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   SnakePanel panel;
   SnakeGameController controller;
   Snake s;
+  SnakeFX fx;
   Food f;
 
   int score;
@@ -121,14 +122,21 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   private void setupGameObjects() {
     score = 0;
     controller = new SnakeGameController();
+
     // Create snake
     s = new Snake(SnakeDirection.RIGHT, 5, 0, 0, xBoundary, yBoundary);
     s.setVisible(false);
     // Create food
     f = new Food(s, xBoundary, yBoundary);
     f.setVisible(false);
+    // Create sound effects
+    fx = new SnakeFX();
+    fx.init();
+
     // Listen for the FoodEaten event
     f.addFoodEatenEventListener(this);
+    // The FX instance also listens for the food eaten event
+    f.addFoodEatenEventListener(fx);
     // Listen for the SnakeMoved event
     s.addSnakeMovedEventListener(this);
     // The Food also listens for the SnakeMoved event
