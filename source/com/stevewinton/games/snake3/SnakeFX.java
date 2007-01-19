@@ -18,7 +18,7 @@ import com.stevewinton.games.snake3.event.*;
 public class SnakeFX implements FoodEatenEventListener, Runnable {
   private static final int  EXTERNAL_BUFFER_SIZE = 128000;
   private Hashtable<String, URL> resources = new Hashtable<String, URL>();
-  private String[] effects = {"belch.wav", "crunch.wav"};
+  private String[] effects = {"belch.wav", "crunch.wav", "fart.wav"};
   private int counter = 0;
 
   void test() {
@@ -41,10 +41,11 @@ public class SnakeFX implements FoodEatenEventListener, Runnable {
   }
 
   public void run() {
+    play("crunch.wav");
     if (++counter % 10 == 0)
       play("belch.wav");
-    else
-      play("crunch.wav");
+    if (counter % 20 == 0)
+      play("fart.wav");
   }
 
   void play(String effect) {

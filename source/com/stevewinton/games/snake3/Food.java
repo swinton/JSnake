@@ -4,7 +4,7 @@ import java.util.ArrayList;
 
 import com.stevewinton.games.snake3.event.*;
 
-// This class will listen for the FoodEatenEvent
+// This class will be the source of FoodEatenEvents
 public class Food implements SnakeMovedEventListener {
   ArrayList<FoodEatenEventListener> eventListeners = new ArrayList<FoodEatenEventListener>();
   int x;

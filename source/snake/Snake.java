@@ -1,14 +1,16 @@
 package com.stevewinton.games.snake3;
 
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.ListIterator;
 
-//import com.stevewinton.games.snake3.exception.*;
 import com.stevewinton.games.snake3.event.*;
 
 public class Snake implements Runnable {
   ArrayList<SnakeMovedEventListener> eventListeners = new ArrayList<SnakeMovedEventListener>();
   ArrayList<SnakeBlock> blocks;
+  ArrayList<SnakeDirection> turns;
+  int interval = 150;
   int xBoundary;
   int yBoundary;
   boolean visible;
@@ -17,6 +19,7 @@ public class Snake implements Runnable {
 
   Snake(SnakeDirection initialDirection, int initialLength, int initialXPos, int initialYPos, int xBoundary, int yBoundary) {
     blocks = new ArrayList<SnakeBlock>(initialLength);
+    turns = new ArrayList<SnakeDirection>(3);
     for (int i = 0; i < initialLength; i++) {
       blocks.add(i, new SnakeBlock(initialDirection, initialXPos, initialYPos));
     }
@@ -41,17 +44,22 @@ public class Snake implements Runnable {
 
   public void run() {
     while (!isOutOfBounds && !hasCollided) {
+      if (!turns.isEmpty()) {
+        // Get next turn, and turn in that direction
+        SnakeDirection nextTurn = turns.remove(0);
+        turn(nextTurn);
+      }
       move();
       // Slow the snake down!
       try {
-        Thread.sleep(75);
+        Thread.sleep(interval);
       }
       catch (Exception ex) {}
     }
   }
 
   // This method will be the source of the FoodEatenEvent
-  void move() {
+  synchronized void move() {
     // Keep moving in head direction
     SnakeBlock head = getHead();
     SnakeDirection direction = head.getDirection();
@@ -82,11 +90,15 @@ public class Snake implements Runnable {
       // Out of bounds
       isOutOfBounds = true;
       e.setOutOfBounds(true);
+      e.setNewX(newX);
+      e.setNewY(newY);
     }
     else if (intersects(newX, newY)) {
       // Self collision
       hasCollided = true;
       e.setSelfCollision(true);
+      e.setNewX(newX);
+      e.setNewY(newY);
     }
     else {
       // Move was valid
@@ -123,10 +135,16 @@ public class Snake implements Runnable {
     }
   }
 
-  synchronized void turn(SnakeDirection direction) {
+  void putTurn(SnakeDirection direction) {
+    turns.add(direction);
+  }
+
+  private void turn(SnakeDirection direction) {
     // Validate and set new direction
-    if (validDirection(direction)) 
-      getHead().setDirection(direction);
+    if (validDirection(direction)) {
+      SnakeBlock head = getHead();
+      head.setDirection(direction);
+    }
   }
 
   boolean contains(SnakeBlock b) {
@@ -155,12 +173,6 @@ public class Snake implements Runnable {
   boolean isTail(SnakeBlock b) {
     return (blocks.indexOf(b) == blocks.size() - 1);
   }
-
-  /*
-  void setFood(Food food) {
-    f = food;
-  }
-  */
 
   SnakeDirection getDirection() {
     return getHead().getDirection();
@@ -192,4 +204,9 @@ public class Snake implements Runnable {
   void setVisible(boolean b) {
     visible = b;
   }
+
+  void setInterval(int millis) {
+    interval = millis;
+  }
+
 }

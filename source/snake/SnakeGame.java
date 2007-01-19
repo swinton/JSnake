@@ -6,16 +6,17 @@ import java.awt.event.*;
 import java.util.ArrayList;
 
 import com.stevewinton.games.snake3.event.*;
-//import com.stevewinton.games.snake3.exception.*;
 
 public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListener {
   int xBoundary = 19;
   int yBoundary = 19;
   int gameWidth = 440;
   int gameHeight = 470;
+  int interval = 150;
 
-  Color snakeColor = Color.yellow;
-  Color foodColor = Color.green;
+  Color snakeColor1 = new Color (255, 196, 33); 
+  Color snakeColor2 = new Color (217, 135, 28);
+  Color foodColor = new Color (34, 166, 255); 
   Color backgroundColor = Color.gray;
   JFrame frame;
   JPanel borderPanel; // An 'outer' panel, used to create a border round the 
@@ -28,7 +29,6 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
 
   int score;
   int scoreIncrement = 10;
-  boolean doReset; // Flag to indicate whether we need to do a reset before starting
   boolean playing; // Flag to indicate whether game is being played
   boolean resized = true; // Flag to indicate whether playing area has been resized
 
@@ -44,17 +44,19 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     repaint();
   }
 
-  public synchronized void snakeMoved(SnakeMovedEvent e) {
+  public void snakeMoved(SnakeMovedEvent e) {
     if (e.isValidMove()) {
       repaint();
     }
     else if (e.isOutOfBounds()) {
       System.out.println("Snake out of bounds!");
+      System.out.println("New co-ordinates: [" + e.getNewX() + "," + e.getNewY() + "]");
       System.out.println(s);
       gameOver();
     }
     else if (e.isSelfCollision()) {
       System.out.println("Snake has eaten itself!");
+      System.out.println("New co-ordinates: [" + e.getNewX() + "," + e.getNewY() + "]");
       System.out.println(s);
       gameOver();
     }
@@ -91,7 +93,6 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     frame = new JFrame("Snake");
     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     frame.addKeyListener(controller);
-    //frame.addComponentListener(controller);
     frame.add(BorderLayout.CENTER, borderPanel);
     frame.setSize(gameWidth, gameHeight);
     frame.setLocation(100, 100);
@@ -101,21 +102,21 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   private void gameOver() {
     playing = false;
     System.out.println("Game over! Score: " + score);
-    //doReset = true;
     reset();
   }
 
   private void go() {
     s.setVisible(true);
     f.setVisible(true);
-    /*
-    if (doReset)
-      reset();
-    */
+
     if (!playing) {
       playing = true;
-      Thread t = new Thread(s);
-      t.start();
+
+      s.setInterval(interval);
+
+      Thread snakeThread = new Thread(s);
+      snakeThread.setName("Snake Thread");
+      snakeThread.start();
     }
   }
 
@@ -124,21 +125,26 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     controller = new SnakeGameController();
 
     // Create snake
-    s = new Snake(SnakeDirection.RIGHT, 5, 0, 0, xBoundary, yBoundary);
+    s = new Snake(SnakeDirection.RIGHT, 3, 0, 0, xBoundary, yBoundary);
     s.setVisible(false);
+
     // Create food
     f = new Food(s, xBoundary, yBoundary);
     f.setVisible(false);
+
     // Create sound effects
     fx = new SnakeFX();
     fx.init();
 
     // Listen for the FoodEaten event
     f.addFoodEatenEventListener(this);
+
     // The FX instance also listens for the food eaten event
     f.addFoodEatenEventListener(fx);
+
     // Listen for the SnakeMoved event
     s.addSnakeMovedEventListener(this);
+
     // The Food also listens for the SnakeMoved event
     s.addSnakeMovedEventListener(f);
   }
@@ -167,28 +173,29 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
   }
 
   class SnakeGameController implements KeyListener, MouseListener, ComponentListener {
-    public synchronized void keyPressed(KeyEvent e) {
+
+    public void keyPressed(KeyEvent e) {
       // Steer the snake!
       switch (e.getKeyCode()) {
         case KeyEvent.VK_KP_UP :
         case KeyEvent.VK_UP :
         case KeyEvent.VK_K :
-          s.turn(SnakeDirection.UP);
+          s.putTurn(SnakeDirection.UP);
           break;
         case KeyEvent.VK_KP_DOWN :
         case KeyEvent.VK_DOWN :
         case KeyEvent.VK_J :
-          s.turn(SnakeDirection.DOWN);
+          s.putTurn(SnakeDirection.DOWN);
           break;
         case KeyEvent.VK_KP_LEFT :
         case KeyEvent.VK_LEFT :
         case KeyEvent.VK_H :
-          s.turn(SnakeDirection.LEFT);
+          s.putTurn(SnakeDirection.LEFT);
           break;
         case KeyEvent.VK_KP_RIGHT :
         case KeyEvent.VK_RIGHT :
         case KeyEvent.VK_L :
-          s.turn(SnakeDirection.RIGHT);
+          s.putTurn(SnakeDirection.RIGHT);
           break;
       }
     }
@@ -198,9 +205,30 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     }
 
     public void keyTyped(KeyEvent e) {
-      // Hit spacebar to get things moving!
-      if (e.getKeyChar() == ' ' && !playing) {
-        go();
+      if (!playing) {
+        switch (e.getKeyChar()) {
+          case ' ' :
+            // Hit spacebar to get things moving!
+            go();
+            break;
+          case '1' :
+            // Easy level
+            interval = 275;
+            break;
+          case '2' :
+            interval = 225;
+            break;
+          case '3' :
+            interval = 175;
+            break;
+          case '4' :
+            interval = 125;
+            break;
+          case '5' :
+            // Extreme level
+            interval = 75;
+            break;
+        }
       }
     }
     
@@ -215,16 +243,16 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
           // Left mouse button = always turn snake clockwise
           switch (s.getHead().getDirection()) {
             case UP :
-              s.turn(SnakeDirection.LEFT);
+              s.putTurn(SnakeDirection.LEFT);
               break;
             case DOWN :
-              s.turn(SnakeDirection.RIGHT);
+              s.putTurn(SnakeDirection.RIGHT);
               break;
             case LEFT :
-              s.turn(SnakeDirection.DOWN);
+              s.putTurn(SnakeDirection.DOWN);
               break;
             case RIGHT :
-              s.turn(SnakeDirection.UP);
+              s.putTurn(SnakeDirection.UP);
               break;
           }
         }
@@ -232,16 +260,16 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
           // Secondary mouse button = always turn snake anti-clockwise
           switch (s.getHead().getDirection()) {
             case UP :
-              s.turn(SnakeDirection.RIGHT);
+              s.putTurn(SnakeDirection.RIGHT);
               break;
             case DOWN :
-              s.turn(SnakeDirection.LEFT);
+              s.putTurn(SnakeDirection.LEFT);
               break;
             case LEFT :
-              s.turn(SnakeDirection.UP);
+              s.putTurn(SnakeDirection.UP);
               break;
             case RIGHT :
-              s.turn(SnakeDirection.DOWN);
+              s.putTurn(SnakeDirection.DOWN);
               break;
           }
         }
@@ -264,7 +292,7 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
       // Not implemented
     }
 
-    public synchronized void componentResized(ComponentEvent e) {
+    public void componentResized(ComponentEvent e) {
       //resized = true;
       //System.out.println(frame.getWidth() + ", " + frame.getHeight());
     }
@@ -319,10 +347,14 @@ public class SnakeGame implements FoodEatenEventListener, SnakeMovedEventListene
     }
 
     private void paintSnake(Graphics g) {
-      g.setColor(snakeColor);
+      g.setColor(snakeColor1);
       ArrayList<SnakeBlock> blocks = s.getSnakeBlocks();
+      int i = 0;
       for (SnakeBlock b : blocks) {
         paintBlock(g, b.getX(), b.getY());
+        // Alternate colour every 3 SnakeBlocks
+        if (++i % 3 == 0)
+          g.setColor((g.getColor().equals(snakeColor1) ? snakeColor2 : snakeColor1));
       }
     }
 

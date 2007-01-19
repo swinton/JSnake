@@ -29,27 +29,27 @@ public class SnakeBlock {
     }
   }
 
-  SnakeDirection getDirection() {
+  synchronized SnakeDirection getDirection() {
     return d;
   }
 
-  void setDirection(SnakeDirection direction) {
+  synchronized void setDirection(SnakeDirection direction) {
     d = direction;
   }
 
-  int getX() {
+  synchronized int getX() {
     return x;
   }
 
-  void setX(int newX) {
+  synchronized void setX(int newX) {
     x = newX;
   }
 
-  int getY() {
+  synchronized int getY() {
     return y;
   }
 
-  void setY(int newY) {
+  synchronized void setY(int newY) {
     y = newY;
   }
 
