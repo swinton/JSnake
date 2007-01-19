@@ -1,5 +1,7 @@
 package com.stevewinton.games.snake3;
 
+import java.util.Arrays;
+
 public class SnakeBlock {
   SnakeDirection d;
   int x;
@@ -27,6 +29,12 @@ public class SnakeBlock {
     else {
       return false;
     }
+  }
+
+  public int hashCode() {
+    // All SnakeBlock instances with the same co-ordinates must have the
+    // same hash code to be truly considered equivalent
+    return Arrays.hashCode(new int[] {x,y});
   }
 
   synchronized SnakeDirection getDirection() {
