@@ -1,6 +1,6 @@
 # JSnake
 
-![snake](https://user-images.githubusercontent.com/27806/62823010-a1095800-bb51-11e9-910f-9ae5609080df.PNG)
+![snake](https://user-images.githubusercontent.com/27806/62838926-53234b80-bc48-11e9-8b8f-1cbe1cd573af.gif)
 
 ```shell
 $JAVA_HOME/javac -d ../classes/ com/stevewinton/games/snake3/*.java
